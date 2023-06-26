@@ -1,0 +1,80 @@
+---------------------------------------------
+
+
+Example of spring cloud config
+
+Annotation to be used in application class
+
+@SpringBootApplication
+@EnableConfigServer
+
+Now we need to configure the server port on which our server is listening and a Git-url, which provides our version-controlled configuration content. The latter can be used with protocols like http, ssh, or a simple file on a local filesystem.
+
+server.port=8888
+spring.cloud.config.server.git.uri=ssh://localhost/config-repo
+spring.cloud.config.server.git.clone-on-start=true
+spring.security.user.name=root
+spring.security.user.password=s3cr3t
+
+To complete our server, we have to initialize a Git repository under the configured url, create some new properties files, and populate them with some values.
+
+The name of the configuration file is composed like a normal Spring application.properties, but instead of the word ‘application,' a configured name, such as the value of the property ‘spring.application.name', of the client is used, followed by a dash and the active profile. For example:
+
+$> git init
+$> echo 'user.role=Developer' > config-client-development.properties
+$> echo 'user.role=User'      > config-client-production.properties
+$> git add .
+$> git commit -m 'Initial config-client properties'
+
+Querying the Configuration
+Now we're able to start our server. The Git-backed configuration API provided by our server can be queried using the following paths:
+
+/{application}/{profile}[/{label}]
+/{application}-{profile}.yml
+/{label}/{application}-{profile}.yml
+/{application}-{profile}.properties
+/{label}/{application}-{profile}.properties
+Copy
+The {label} placeholder refers to a Git branch, {application} to the client's application name, and the {profile} to the client's current active application profile.
+
+
+The Client Implementation
+
+In addition to the application name, we also put the active profile and the connection-details in our application.properties:
+
+spring.application.name=config-client
+spring.profiles.active=development
+spring.config.import=optional:configserver:http://root:s3cr3t@localhost:8888
+Copy
+This will connect to the Config Server at http://localhost:8888 and will also use HTTP basic security while initiating the connection. We can also set the username and password separately using spring.cloud.config.username and spring.cloud.config.password properties, respectively.
+
+In some cases, we may want to fail the startup of a service if it isn't able to connect to the Config Server. If this is the desired behavior, we can remove the optional: prefix to make the client halt with an exception.
+
+To test if the configuration is properly received from our server, and the role value gets injected in our controller method, we simply curl it after booting the client:
+
+
+To use a file system backend, we need to:
+
+set the spring.cloud.config.server.native.search-locations property in our application.properties file.
+run our application with the native spring profile.
+Setting the Search Location
+If you want to put your configuration files outside of your classpath, set the spring.cloud.config.server.native.search-locations to the place where you put your configuration files:
+
+spring.cloud.config.server.native.search-locations=file:///C:/config
+The above configuration is just an example. If you are using spring cloud config with a file system backend, then you should put your configuration files in a shared file system.
+
+If you want to put your configuration files in your classpath on the other hand, set the spring.cloud.config.server.native.search-locations like below :
+
+spring.cloud.config.server.native.search-locations=classpath:/config
+Running Your Application with a Spring Profile
+If you want to load the configurations from a file system or your project’s classpath you need to run your application with “native” spring profile.
+
+VM argument:
+
+-Dspring.profiles.active=native
+Don’t forget that you can provide multiple spring profiles by separating each value with a comma:
+
+-Dspring.profiles.active=native,local
+Running application with Maven Spring-Boot plugin from Command Line
+Open a command line from the location where your project’s pom.xml resides and run the following command.
+
