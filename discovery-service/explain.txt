@@ -1,0 +1,20 @@
+configs defined
+
+spring:
+  config:
+    import: "optional:configserver:http://config-service:8088"
+    activate:
+      on-profile: docker
+
+
+the application file from the config service will be picked
+
+
+and eureka server will be running on
+
+server:
+  port: 8061
+
+eureka:
+  instance:
+    hostname: localhost
